@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::bridge::types::{RpcAgentParams, RpcRequest, RpcResponse};
 use crate::state::SharedState;
@@ -55,23 +55,65 @@ pub async fn forward_chat(
     let result = tokio::time::timeout(timeout, async {
         while let Some(msg) = read.next().await {
             let msg = msg?;
-            if let Message::Text(text) = msg {
-                if let Ok(resp) = serde_json::from_str::<RpcResponse>(&text) {
-                    if resp.id.as_deref() == Some(&id) {
-                        if let Some(err) = resp.error {
-                            warn!(error = %err, "OpenClaw RPC error");
-                            return Ok(None);
+            match &msg {
+                Message::Text(text) => {
+                    debug!(raw_len = text.len(), "WS message received");
+
+                    // Try parsing as our RPC response
+                    match serde_json::from_str::<RpcResponse>(text.as_ref()) {
+                        Ok(resp) => {
+                            debug!(
+                                resp_id = ?resp.id,
+                                has_result = resp.result.is_some(),
+                                has_error = resp.error.is_some(),
+                                "Parsed RPC response"
+                            );
+                            if resp.id.as_deref() == Some(&id) {
+                                if let Some(err) = resp.error {
+                                    warn!(error = %err, "OpenClaw RPC error");
+                                    return Ok(None);
+                                }
+                                if let Some(result) = resp.result {
+                                    debug!(
+                                        status = ?result.status,
+                                        summary = ?result.summary,
+                                        has_inner = result.result.is_some(),
+                                        "RPC result details"
+                                    );
+                                    let reply = result
+                                        .result
+                                        .and_then(|r| {
+                                            debug!(has_payloads = r.payloads.is_some(), "Inner result");
+                                            r.payloads
+                                        })
+                                        .and_then(|p| {
+                                            debug!(payload_count = p.len(), "Payloads");
+                                            p.into_iter().next()
+                                        })
+                                        .and_then(|p| {
+                                            debug!(text = ?p.text, "First payload");
+                                            p.text
+                                        });
+                                    return Ok(reply);
+                                }
+                                return Ok(None);
+                            } else {
+                                debug!("Response id mismatch, waiting for ours");
+                            }
                         }
-                        if let Some(result) = resp.result {
-                            let reply = result
-                                .result
-                                .and_then(|r| r.payloads)
-                                .and_then(|p| p.into_iter().next())
-                                .and_then(|p| p.text);
-                            return Ok(reply);
+                        Err(e) => {
+                            // Log first 500 chars of unparseable messages
+                            let preview: String = text.chars().take(500).collect();
+                            debug!(error = %e, preview, "WS message not RPC response");
                         }
-                        return Ok(None);
                     }
+                }
+                Message::Close(_) => {
+                    debug!("WS connection closed by server");
+                    break;
+                }
+                other => {
+                    debug!(kind = ?other, "Non-text WS message");
                 }
             }
         }
