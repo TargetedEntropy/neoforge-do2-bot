@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use azalea::prelude::*;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::bridge::outbound;
 use crate::commands;
@@ -32,22 +32,53 @@ pub async fn handle(bot: Client, event: Event, state: BotState) -> anyhow::Resul
         }
 
         Event::Chat(packet) => {
+            // Log the raw message for debugging
+            let raw_message = packet.message().to_string();
             let (sender, content) = packet.split_sender_and_content();
+            let my_name = bot.username();
+
+            debug!(
+                raw = %raw_message,
+                sender = ?sender,
+                content = %content,
+                my_name = %my_name,
+                "Chat packet received"
+            );
+
+            // If sender is None, try to parse from raw message (modded servers
+            // often use custom chat formats that break split_sender_and_content)
             let sender = match sender {
                 Some(s) => s,
-                None => return Ok(()), // system message, skip
+                None => {
+                    // Try to extract sender from common formats like "<Player> msg" or "Player: msg"
+                    let raw = raw_message.trim();
+                    if raw.starts_with('<') {
+                        if let Some(end) = raw.find('>') {
+                            raw[1..end].to_string()
+                        } else {
+                            debug!("No sender found, skipping");
+                            return Ok(());
+                        }
+                    } else {
+                        debug!("No sender found, skipping");
+                        return Ok(());
+                    }
+                }
             };
 
             // Don't respond to our own messages
-            let my_name = bot.username();
             if sender.eq_ignore_ascii_case(&my_name) {
+                debug!("Ignoring own message");
                 return Ok(());
             }
 
             info!(sender = %sender, content = %content, "Chat received");
 
-            // Check if the bot was mentioned by name
-            if !content.to_lowercase().contains(&my_name.to_lowercase()) {
+            // Check if the bot was mentioned by name — search the FULL raw message
+            // since content may be truncated by split_sender_and_content
+            let search_text = raw_message.to_lowercase();
+            if !search_text.contains(&my_name.to_lowercase()) {
+                debug!(my_name, "Not mentioned, skipping");
                 return Ok(());
             }
 
