@@ -1,0 +1,9 @@
+modLoader = "lowcodefml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId = "azaleabridge"
+version = "2.5.0"
+displayName = "Azalea Bridge"
+description = "Allows non-NeoForge clients (Azalea bot) to connect to modded NeoForge servers"

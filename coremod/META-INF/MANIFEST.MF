@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Specification-Title: Azalea Bridge
+Specification-Version: 2.5.0
+Specification-Vendor: Azalea Bot
+Implementation-Title: Azalea Bridge
+Implementation-Version: 2.5.0
+Implementation-Vendor: Azalea Bot

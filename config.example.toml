@@ -1,0 +1,22 @@
+# Azalea Bot Configuration
+# Copy to azalea-bot.toml or config.toml and edit.
+# CLI flags and env vars override these values.
+
+[server]
+host = "localhost"
+port = 25566
+
+[auth]
+# "microsoft" or "offline"
+mode = "offline"
+# Microsoft account email (required if mode = "microsoft")
+# email = "user@example.com"
+# Offline mode username (used if mode = "offline")
+username = "azalea_bot"
+
+[openclaw]
+url = "http://127.0.0.1:18789"
+# token = "your-openclaw-bearer-token"
+
+[bot]
+http_port = 3001

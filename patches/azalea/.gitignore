@@ -1,0 +1,16 @@
+/target
+/doc
+.vscode
+
+.cargo/config
+.cargo/config.toml
+
+# created by azalea-auth/examples/auth, defined in the main .gitignore because
+# the example could be run from anywhere
+example_cache.json
+
+# these are created by profiling tools
+flamegraph.svg
+perf.data
+perf.data.old
+heaptrack.*

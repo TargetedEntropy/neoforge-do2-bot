@@ -1,0 +1,43 @@
+[package]
+name = "azalea-bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+azalea = { path = "patches/azalea/azalea" }
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+serde = { version = ">=1.0.100, <1.0.220", features = ["derive"] }
+serde_json = "1"
+reqwest = { version = "0.12", features = ["json"] }
+axum = "0.8"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+parking_lot = "0.12"
+clap = { version = "4", features = ["derive", "env"] }
+toml = "0.8"
+dirs = "6"
+
+[patch.crates-io]
+simdnbt = { path = "patches/simdnbt-0.6.1" }
+azalea = { path = "patches/azalea/azalea" }
+azalea-auth = { path = "patches/azalea/azalea-auth" }
+azalea-block = { path = "patches/azalea/azalea-block" }
+azalea-block-macros = { path = "patches/azalea/azalea-block/azalea-block-macros" }
+azalea-brigadier = { path = "patches/azalea/azalea-brigadier" }
+azalea-buf = { path = "patches/azalea/azalea-buf" }
+azalea-buf-macros = { path = "patches/azalea/azalea-buf/azalea-buf-macros" }
+azalea-chat = { path = "patches/azalea/azalea-chat" }
+azalea-client = { path = "patches/azalea/azalea-client" }
+azalea-core = { path = "patches/azalea/azalea-core" }
+azalea-crypto = { path = "patches/azalea/azalea-crypto" }
+azalea-entity = { path = "patches/azalea/azalea-entity" }
+azalea-inventory = { path = "patches/azalea/azalea-inventory" }
+azalea-inventory-macros = { path = "patches/azalea/azalea-inventory/azalea-inventory-macros" }
+azalea-language = { path = "patches/azalea/azalea-language" }
+azalea-physics = { path = "patches/azalea/azalea-physics" }
+azalea-protocol = { path = "patches/azalea/azalea-protocol" }
+azalea-protocol-macros = { path = "patches/azalea/azalea-protocol/azalea-protocol-macros" }
+azalea-registry = { path = "patches/azalea/azalea-registry" }
+azalea-registry-macros = { path = "patches/azalea/azalea-registry/azalea-registry-macros" }
+azalea-world = { path = "patches/azalea/azalea-world" }
