@@ -105,15 +105,16 @@ Future actions (teleport, movement, etc.) will be added as new variants.
 ## OpenClaw Integration
 
 When a player mentions the bot's name in Minecraft chat:
-1. Bot detects the mention (case-insensitive)
-2. POSTs to OpenClaw's `/hooks/agent` with sender, content, source
+1. Bot detects the mention (case-insensitive, with fallback parsing for modded chat formats)
+2. Runs `openclaw agent --agent main --message "Player said: ..." --json` as a subprocess
 3. OpenClaw processes through an LLM and returns a reply
 4. Bot sends the reply as Minecraft chat
 
 OpenClaw can also push commands TO the bot via the HTTP API above,
 enabling Discord-to-Minecraft communication.
 
-Set `OPENCLAW_URL` and `OPENCLAW_TOKEN` to enable.
+The `openclaw` CLI must be installed and accessible on the same machine as the bot.
+See [docs/openclaw-setup.md](docs/openclaw-setup.md) for full setup instructions.
 
 ## Architecture
 
@@ -125,7 +126,7 @@ src/
 ├── handler.rs       # Event handler: Login, Chat, Tick, Death, Disconnect
 ├── bridge/
 │   ├── mod.rs
-│   ├── outbound.rs  # MC -> OpenClaw: POST /hooks/agent
+│   ├── outbound.rs  # MC -> OpenClaw: via `openclaw agent` CLI
 │   ├── inbound.rs   # OpenClaw -> MC: axum HTTP server
 │   └── types.rs     # Shared JSON request/response types
 └── commands/

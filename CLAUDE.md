@@ -11,7 +11,7 @@ Bridges in-game chat to OpenClaw (AI agent gateway) for AI-powered responses via
 - **Server**: NeoForge 21.1.219
 - **Bot**: Rust + Azalea (patched fork, nightly toolchain)
 - **Auth**: Microsoft (device-code OAuth) or offline mode
-- **AI Bridge**: OpenClaw via HTTP webhooks
+- **AI Bridge**: OpenClaw via `openclaw agent` CLI subprocess
 
 ---
 
@@ -31,7 +31,7 @@ nf-do2-bot/
 │   ├── handler.rs         # Event handler: Login, Chat, Tick, Death, Disconnect
 │   ├── bridge/
 │   │   ├── mod.rs
-│   │   ├── outbound.rs    # MC -> OpenClaw: POST /hooks/agent
+│   │   ├── outbound.rs    # MC -> OpenClaw: via `openclaw agent` CLI
 │   │   ├── inbound.rs     # OpenClaw -> MC: axum HTTP server on port 3001
 │   │   └── types.rs       # Shared JSON request/response types
 │   └── commands/
@@ -128,10 +128,11 @@ Priority: **CLI flags > env vars > config file > defaults**
 
 **MC Chat -> OpenClaw -> MC Chat (player speaks to bot):**
 1. Player mentions bot's name in chat
-2. `Event::Chat` handler detects mention (case-insensitive via `bot.username()`)
-3. Spawns async task to POST to OpenClaw `/hooks/agent`
-4. OpenClaw returns AI reply
-5. Bot sends reply as MC chat
+2. `Event::Chat` handler detects mention (case-insensitive via `bot.username()`,
+   with fallback parsing for modded chat formats)
+3. Spawns async task running `openclaw agent --agent main --message "..." --json`
+4. OpenClaw processes through LLM, CLI returns JSON with reply
+5. Bot extracts `result.payloads[0].text` and sends as MC chat
 
 **OpenClaw/Discord -> MC (external command):**
 1. POST to `http://bot:3001/actions` with `{"action":"chat","message":"..."}`
