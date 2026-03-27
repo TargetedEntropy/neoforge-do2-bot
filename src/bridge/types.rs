@@ -1,19 +1,45 @@
 use serde::{Deserialize, Serialize};
 
-/// Sent to OpenClaw when a player speaks to the bot in MC chat.
+/// JSON-RPC 2.0 request for OpenClaw gateway WebSocket.
 #[derive(Serialize)]
-pub struct ChatForward {
-    pub sender: String,
-    pub content: String,
-    pub source: &'static str,
-    pub whisper: bool,
+pub struct RpcRequest {
+    pub jsonrpc: &'static str,
+    pub id: String,
+    pub method: &'static str,
+    pub params: RpcAgentParams,
 }
 
-/// Response from OpenClaw's /hooks/agent endpoint.
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RpcAgentParams {
+    pub message: String,
+    pub agent_id: String,
+    pub idempotency_key: String,
+}
+
+/// JSON-RPC 2.0 response from OpenClaw gateway.
 #[derive(Deserialize)]
-pub struct OpenClawResponse {
-    /// The AI's reply text, if any.
-    pub reply: Option<String>,
+pub struct RpcResponse {
+    pub id: Option<String>,
+    pub result: Option<RpcResult>,
+    pub error: Option<serde_json::Value>,
+}
+
+#[derive(Deserialize)]
+pub struct RpcResult {
+    pub status: Option<String>,
+    pub summary: Option<String>,
+    pub result: Option<RpcInnerResult>,
+}
+
+#[derive(Deserialize)]
+pub struct RpcInnerResult {
+    pub payloads: Option<Vec<RpcPayload>>,
+}
+
+#[derive(Deserialize)]
+pub struct RpcPayload {
+    pub text: Option<String>,
 }
 
 /// Inbound command from OpenClaw/Discord to the bot's HTTP server.

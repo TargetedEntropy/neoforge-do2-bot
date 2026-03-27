@@ -17,6 +17,9 @@ parking_lot = "0.12"
 clap = { version = "4", features = ["derive", "env"] }
 toml = "0.8"
 dirs = "6"
+tokio-tungstenite = { version = "0.26", features = ["native-tls"] }
+futures-util = "0.3"
+uuid = { version = "1", features = ["v4"] }
 
 [patch.crates-io]
 simdnbt = { path = "patches/simdnbt-0.6.1" }
