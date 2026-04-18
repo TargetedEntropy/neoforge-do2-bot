@@ -18,10 +18,13 @@ pub async fn forward_chat(
     // protocol including waiting for the final response.
     let mut cmd = tokio::process::Command::new("openclaw");
     cmd.arg("agent")
-        .arg("--agent").arg("main")
-        .arg("--message").arg(&message)
+        .arg("--agent")
+        .arg("main")
+        .arg("--message")
+        .arg(&message)
         .arg("--json")
-        .arg("--timeout").arg("120");
+        .arg("--timeout")
+        .arg("120");
 
     debug!(cmd = ?cmd, "Running openclaw agent");
 

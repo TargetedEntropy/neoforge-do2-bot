@@ -11,7 +11,8 @@ Built for the DynamicOdyssey modpack but works with any NeoForge 21.1.x server.
 - Connects to modded NeoForge servers alongside real players
 - Microsoft or offline authentication
 - Listens for chat mentions, forwards to OpenClaw, relays AI responses
-- HTTP API for sending commands into the game (chat, future: teleport, etc.)
+- HTTP API for sending commands into the game (chat + movement controls)
+- Optional conservative autonomous movement (disabled by default)
 - Stays connected persistently with proper Tick event processing
 - CLI flags, env vars, and TOML config file support
 
@@ -71,6 +72,18 @@ token = "your-token"
 
 [bot]
 http_port = 3001
+
+[movement]
+# disabled by default for safety
+enabled = false
+mode = "wander"
+min_step_ticks = 8
+max_step_ticks = 20
+min_idle_ticks = 30
+max_idle_ticks = 80
+turn_degrees = 35.0
+unstuck_ticks = 30
+jump_cooldown_ticks = 80
 ```
 
 ### Authentication
@@ -92,15 +105,27 @@ The bot runs an HTTP server (default port 3001) for receiving commands:
 |----------|--------|------|---------|
 | `/health` | GET | — | Returns `"ok"` |
 | `/actions` | POST | `{"action":"chat","message":"..."}` | Send a chat message |
+| `/actions` | POST | `{"action":"movement_start"}` | Enable autonomous movement |
+| `/actions` | POST | `{"action":"movement_start","mode":"wander"}` | Enable autonomous movement + mode |
+| `/actions` | POST | `{"action":"movement_stop"}` | Disable autonomous movement |
+| `/actions` | POST | `{"action":"movement_mode","mode":"wander"}` | Change movement mode |
 
 ```bash
 # Send a chat message
 curl -X POST http://localhost:3001/actions \
   -H "Content-Type: application/json" \
   -d '{"action":"chat","message":"Hello from Discord!"}'
-```
 
-Future actions (teleport, movement, etc.) will be added as new variants.
+# Start conservative autonomous movement
+curl -X POST http://localhost:3001/actions \
+  -H "Content-Type: application/json" \
+  -d '{"action":"movement_start","mode":"wander"}'
+
+# Stop movement
+curl -X POST http://localhost:3001/actions \
+  -H "Content-Type: application/json" \
+  -d '{"action":"movement_stop"}'
+```
 
 ## OpenClaw Integration
 
@@ -124,6 +149,7 @@ src/
 ├── config.rs        # CLI flags (clap), env vars, TOML config file
 ├── state.rs         # BotState (Azalea Component) + SharedState (Arc)
 ├── handler.rs       # Event handler: Login, Chat, Tick, Death, Disconnect
+├── movement.rs      # Conservative autonomous movement controller
 ├── bridge/
 │   ├── mod.rs
 │   ├── outbound.rs  # MC -> OpenClaw: via `openclaw agent` CLI

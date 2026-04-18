@@ -5,7 +5,8 @@ use parking_lot::Mutex;
 use tokio::sync::mpsc;
 
 use crate::commands::BotAction;
-use crate::config::{AuthMode, Config};
+use crate::config::{AuthMode, Config, MovementConfig};
+use crate::movement::AutonomousMovement;
 
 pub type ActionTx = mpsc::UnboundedSender<BotAction>;
 pub type ActionRx = mpsc::UnboundedReceiver<BotAction>;
@@ -25,6 +26,7 @@ pub struct SharedState {
     /// The HTTP server sends actions through this channel.
     /// Set to Some after the channel is created in main().
     pub action_sender: Mutex<Option<ActionTx>>,
+    pub movement: Mutex<AutonomousMovement>,
 }
 
 impl Default for SharedState {
@@ -35,24 +37,50 @@ impl Default for SharedState {
             config: Config {
                 mc_host: "localhost".into(),
                 mc_port: 25566,
-                auth: AuthMode::Offline { username: "azalea_bot".into() },
+                auth: AuthMode::Offline {
+                    username: "azalea_bot".into(),
+                },
                 openclaw_url: String::new(),
                 openclaw_token: String::new(),
                 http_listen_port: 3001,
+                movement: MovementConfig {
+                    enabled: false,
+                    mode: crate::movement::MovementMode::Wander,
+                    min_step_ticks: 8,
+                    max_step_ticks: 20,
+                    min_idle_ticks: 30,
+                    max_idle_ticks: 80,
+                    turn_degrees: 35.0,
+                    unstuck_ticks: 30,
+                    jump_cooldown_ticks: 80,
+                },
             },
             http_client: reqwest::Client::new(),
             action_sender: Mutex::new(None),
+            movement: Mutex::new(AutonomousMovement::new(MovementConfig {
+                enabled: false,
+                mode: crate::movement::MovementMode::Wander,
+                min_step_ticks: 8,
+                max_step_ticks: 20,
+                min_idle_ticks: 30,
+                max_idle_ticks: 80,
+                turn_degrees: 35.0,
+                unstuck_ticks: 30,
+                jump_cooldown_ticks: 80,
+            })),
         }
     }
 }
 
 impl BotState {
     pub fn new(config: Config, action_tx: ActionTx) -> Self {
+        let movement_cfg = config.movement.clone();
         Self {
             shared: Arc::new(SharedState {
                 config,
                 http_client: reqwest::Client::new(),
                 action_sender: Mutex::new(Some(action_tx)),
+                movement: Mutex::new(AutonomousMovement::new(movement_cfg)),
             }),
         }
     }

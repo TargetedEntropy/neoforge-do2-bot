@@ -48,6 +48,8 @@ pub struct InboundCommand {
     pub action: String,
     #[serde(default)]
     pub message: Option<String>,
+    #[serde(default)]
+    pub mode: Option<String>,
     // Future fields for teleport, etc:
     // pub x: Option<f64>,
     // pub y: Option<f64>,

@@ -8,6 +8,7 @@ use tracing::{error, info, warn};
 
 use crate::bridge::types::InboundCommand;
 use crate::commands::BotAction;
+use crate::movement::MovementMode;
 use crate::state::SharedState;
 
 /// Start the HTTP server that receives commands from OpenClaw/Discord.
@@ -69,11 +70,91 @@ fn parse_action(cmd: InboundCommand) -> Result<BotAction, StatusCode> {
             let message = cmd.message.ok_or(StatusCode::BAD_REQUEST)?;
             Ok(BotAction::SendChat { message })
         }
+        "movement_start" => {
+            let mode = match cmd.mode {
+                Some(mode) => Some(parse_movement_mode(&mode)?),
+                None => None,
+            };
+            Ok(BotAction::StartMovement { mode })
+        }
+        "movement_stop" => Ok(BotAction::SetMovementEnabled { enabled: false }),
+        "movement_mode" => {
+            let mode = parse_movement_mode(&cmd.mode.ok_or(StatusCode::BAD_REQUEST)?)?;
+            Ok(BotAction::SetMovementMode { mode })
+        }
         // Future:
         // "teleport" => { ... }
         _ => {
             warn!(action = %cmd.action, "Unknown action");
             Err(StatusCode::BAD_REQUEST)
         }
+    }
+}
+
+fn parse_movement_mode(mode: &str) -> Result<MovementMode, StatusCode> {
+    MovementMode::from_str(mode).ok_or(StatusCode::BAD_REQUEST)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_chat_action() {
+        let cmd = InboundCommand {
+            action: "chat".into(),
+            message: Some("hello".into()),
+            mode: None,
+        };
+
+        assert!(matches!(
+            parse_action(cmd),
+            Ok(BotAction::SendChat { message }) if message == "hello"
+        ));
+    }
+
+    #[test]
+    fn parses_movement_start_stop() {
+        let start = InboundCommand {
+            action: "movement_start".into(),
+            message: None,
+            mode: None,
+        };
+        let stop = InboundCommand {
+            action: "movement_stop".into(),
+            message: None,
+            mode: None,
+        };
+
+        assert!(matches!(
+            parse_action(start),
+            Ok(BotAction::StartMovement { mode: None })
+        ));
+        assert!(matches!(
+            parse_action(stop),
+            Ok(BotAction::SetMovementEnabled { enabled: false })
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_movement_mode() {
+        let cmd = InboundCommand {
+            action: "movement_mode".into(),
+            message: None,
+            mode: Some("chaos".into()),
+        };
+
+        assert!(matches!(parse_action(cmd), Err(StatusCode::BAD_REQUEST)));
+    }
+
+    #[test]
+    fn rejects_movement_mode_without_mode_field() {
+        let cmd = InboundCommand {
+            action: "movement_mode".into(),
+            message: None,
+            mode: None,
+        };
+
+        assert!(matches!(parse_action(cmd), Err(StatusCode::BAD_REQUEST)));
     }
 }
