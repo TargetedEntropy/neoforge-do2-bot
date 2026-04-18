@@ -2,6 +2,7 @@ mod bridge;
 mod commands;
 mod config;
 mod handler;
+mod movement;
 mod state;
 
 use azalea::prelude::*;
@@ -25,6 +26,8 @@ async fn main() {
         },
         openclaw = %config.openclaw_url,
         http_port = config.http_listen_port,
+        movement_enabled = config.movement.enabled,
+        movement_mode = config.movement.mode.as_str(),
         "Starting azalea-bot"
     );
 

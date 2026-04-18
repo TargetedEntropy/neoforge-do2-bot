@@ -1,10 +1,16 @@
 use azalea::prelude::*;
 use tracing::info;
 
+use crate::movement::MovementMode;
+use crate::state::SharedState;
+
 /// Actions the bot can perform in-game.
 /// New capabilities (teleport, inventory, etc.) are added as variants here.
 pub enum BotAction {
     SendChat { message: String },
+    StartMovement { mode: Option<MovementMode> },
+    SetMovementEnabled { enabled: bool },
+    SetMovementMode { mode: MovementMode },
     // Future:
     // Teleport { x: f64, y: f64, z: f64 },
     // RunCommand { command: String },
@@ -12,7 +18,7 @@ pub enum BotAction {
 }
 
 /// Execute a single action using the bot client.
-pub fn execute(bot: &Client, action: BotAction) {
+pub fn execute(bot: &Client, shared: &SharedState, action: BotAction) {
     match action {
         BotAction::SendChat { message } => {
             // MC chat limit is 256 chars; split long messages
@@ -20,6 +26,24 @@ pub fn execute(bot: &Client, action: BotAction) {
                 info!(msg = %chunk, "Sending chat");
                 bot.chat(&chunk);
             }
+        }
+        BotAction::StartMovement { mode } => {
+            let mut movement = shared.movement.lock();
+            if let Some(mode) = mode {
+                movement.set_mode(mode);
+            }
+            movement.set_enabled(true);
+            info!("Autonomous movement started");
+        }
+        BotAction::SetMovementEnabled { enabled } => {
+            let mut movement = shared.movement.lock();
+            movement.set_enabled(enabled);
+            info!(enabled, "Updated autonomous movement enabled state");
+        }
+        BotAction::SetMovementMode { mode } => {
+            let mut movement = shared.movement.lock();
+            movement.set_mode(mode);
+            info!(mode = mode.as_str(), "Updated autonomous movement mode");
         }
     }
 }

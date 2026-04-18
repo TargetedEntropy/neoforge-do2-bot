@@ -22,7 +22,7 @@ pub fn set_action_receiver(rx: ActionRx) {
     });
 }
 
-pub async fn handle(bot: Client, event: Event, state: BotState) -> anyhow::Result<()> {
+pub async fn handle(mut bot: Client, event: Event, state: BotState) -> anyhow::Result<()> {
     let shared = &state.shared;
 
     match event {
@@ -92,9 +92,11 @@ pub async fn handle(bot: Client, event: Event, state: BotState) -> anyhow::Resul
             tokio::spawn(async move {
                 match outbound::forward_chat(&shared_clone, &sender, &content, whisper).await {
                     Ok(Some(reply)) => {
-                        commands::execute(&bot_clone, commands::BotAction::SendChat {
-                            message: reply,
-                        });
+                        commands::execute(
+                            &bot_clone,
+                            &shared_clone,
+                            commands::BotAction::SendChat { message: reply },
+                        );
                     }
                     Ok(None) => {
                         info!("OpenClaw returned no reply");
@@ -112,9 +114,14 @@ pub async fn handle(bot: Client, event: Event, state: BotState) -> anyhow::Resul
                 if let Some(mut rx) = drain.rx.try_lock() {
                     while let Ok(action) = rx.try_recv() {
                         info!("Executing queued action");
-                        commands::execute(&bot, action);
+                        commands::execute(&bot, shared, action);
                     }
                 }
+            }
+
+            // Run one conservative autonomous movement tick.
+            if let Some(mut movement) = shared.movement.try_lock() {
+                movement.tick(&mut bot);
             }
         }
 

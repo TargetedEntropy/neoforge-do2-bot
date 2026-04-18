@@ -20,3 +20,22 @@ url = "http://127.0.0.1:18789"
 
 [bot]
 http_port = 3001
+
+[movement]
+# Safety default: disabled unless explicitly enabled.
+enabled = false
+# Current modes: "wander"
+mode = "wander"
+
+# Conservative defaults (20 ticks = 1 second)
+min_step_ticks = 8
+max_step_ticks = 20
+min_idle_ticks = 30
+max_idle_ticks = 80
+
+# Max yaw turn per movement decision
+turn_degrees = 35.0
+
+# If we're not making progress for this many ticks, jump once
+unstuck_ticks = 30
+jump_cooldown_ticks = 80
